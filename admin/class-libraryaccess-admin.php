@@ -116,11 +116,11 @@ class Libraryaccess_Admin
 
 		// Creating array to add option of library.
 		$library_product["library"] = [
-			"id"            => "_library",
-			"wrapper_class" => "show_if_simple",
-			"label"         => __("library", "text-domain"),
-			"description"   => __("Library Access - Give Access to all Courses", "text-domain"),
-			"default"       => "no",
+			"id"            => '_library',
+			"wrapper_class" => 'show_if_simple',
+			"label"         => __('library', 'woocommerce'),
+			"description"   => __('Library Access - Give Access to all Courses', 'woocommerce'),
+			"default"       => 'no',
 		];
 
 		return $library_product;
