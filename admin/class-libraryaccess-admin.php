@@ -103,26 +103,37 @@ class Libraryaccess_Admin
 		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/libraryaccess-admin.js', array('jquery'), $this->version, false);
 	}
 
+
+	// add_library_checkbox function is used to add the checkbox in the product data.
 	public function add_library_checkbox()
 	{
-		add_filter("product_type_options", function ($library_product) {
-
-			$library_product["library"] = [
-				"id"            => "_library",
-				"wrapper_class" => "show_if_simple",
-				"label"         => "library",
-				"description"   => "Library Access - Give Access to all Courses",
-				"default"       => "no",
-			];
-
-			return $library_product;
-		});
+		add_filter("product_type_options", array($this, "add_library_checkbox_array"));
 	}
+
+	// add_library_checkbox_array function is callback function.
+	public function add_library_checkbox_array($library_product)
+	{
+
+		// Creating array to add option of library.
+		$library_product["library"] = [
+			"id"            => "_library",
+			"wrapper_class" => "show_if_simple",
+			"label"         => __("library", "text-domain"),
+			"description"   => __("Library Access - Give Access to all Courses", "text-domain"),
+			"default"       => "no",
+		];
+
+		return $library_product;
+	}
+
+	//save_checkbox_product_value function is used to save the data in database.
 
 	public function save_checkbox_product_value($product_id)
 	{
+		$product = wc_get_product($product_id);
 
 		$is_library = isset($_POST['_library']) ? 'yes' : 'no';
-		update_metadata('post', $product_id, '_library', $is_library);
+		$product->update_meta_data('_library', $is_library);
+		$product->save_meta_data();
 	}
 }
