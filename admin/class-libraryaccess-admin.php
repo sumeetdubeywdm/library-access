@@ -20,6 +20,7 @@
  * @subpackage Libraryaccess/admin
  * @author     Sumeet Dubey <sumeet.dubey@wisdmlabs.com>
  */
+require_once dirname(__FILE__) . '/../includes/class-libraryaccess-productlistaccess.php';
 class Libraryaccess_Admin
 {
 
@@ -57,6 +58,7 @@ class Libraryaccess_Admin
 		add_action('woocommerce_process_product_meta', array($this, 'save_checkbox_product_value'));
 		add_action('admin_init', array($this, 'add_associate_courses_with_products'), 10, 1);
 		add_action('admin_init', array($this, 'remove_associate_courses_with_products'), 10, 1);
+		add_action('transition_post_status',array($this, 'new_courses_association_with_products'), 10, 3);
 	}
 
 	/**
@@ -141,7 +143,7 @@ class Libraryaccess_Admin
 
 
 	// Associating the existing courses with the product which have library option enabled.
-	public function add_associate_courses_with_products()
+	public static function add_associate_courses_with_products()
 	{
 		// Getting all the publish courses.
 		$args = array(
@@ -152,17 +154,7 @@ class Libraryaccess_Admin
 		$courses = get_posts($args);
 
 		// Getting all the the product which have library option enabled.
-		$args = array(
-			'post_type' => 'product',
-			'posts_per_page' => -1,
-			'meta_query' => array(
-				array(
-					'key' => '_library',
-					'value' => 'yes',
-				),
-			),
-		);
-		$products = get_posts($args);
+		$products = LibraryAccess_ProductListAccess::getLibraryProductsList();
 
 		foreach ($products as $product) {
 			$product_id = $product->ID;
@@ -207,5 +199,31 @@ class Libraryaccess_Admin
 			$product_object->update_meta_data('_previous_library', $current_library_value);
 			$product_object->save_meta_data();
 		}
+	}
+
+	// Adding function to associate new courses to products.
+	public static function new_courses_association_with_products($new_status, $old_status, $post){
+		if($post->post_type === 'sfwd-courses' && $old_status !== 'publish' && $new_status === 'publish'){
+
+			// Getting all the products which have library access option enabled.
+			$products = LibraryAccess_ProductListAccess::getLibraryProductsList();
+
+			foreach ($products as $product){
+				$product_id = $product->ID;
+				$product_object = wc_get_product($product_id);
+				$associated_courses_array = $product_object-> get_meta('_related_course',true);
+				$course_id = $post->ID;
+
+
+				// if course is not present in the associated course array then the course will added.
+				if(!in_array($course_id,$associated_courses_array)){
+					$associated_courses_array[] = $course_id;
+					$product_object->update_meta_data('_related_course',$associated_courses_array);
+					$product_object->save_meta_data();
+				}
+
+			}
+		}
+
 	}
 }
