@@ -55,6 +55,8 @@ class Libraryaccess_Admin
 		$this->version = $version;
 		add_action('admin_init', array($this, 'add_library_checkbox'));
 		add_action('woocommerce_process_product_meta', array($this, 'save_checkbox_product_value'));
+		add_action('admin_init', array($this, 'add_associate_courses_with_products'), 10, 1);
+		add_action('admin_init', array($this, 'remove_associate_courses_with_products'), 10, 1);
 	}
 
 	/**
@@ -135,5 +137,75 @@ class Libraryaccess_Admin
 		$is_library = isset($_POST['_library']) ? 'yes' : 'no';
 		$product->update_meta_data('_library', $is_library);
 		$product->save_meta_data();
+	}
+
+
+	// Associating the existing courses with the product which have library option enabled.
+	public function add_associate_courses_with_products()
+	{
+		// Getting all the publish courses.
+		$args = array(
+			'post_type' => 'sfwd-courses',
+			'posts_per_page' => -1,
+			'post_status' => 'publish',
+		);
+		$courses = get_posts($args);
+
+		// Getting all the the product which have library option enabled.
+		$args = array(
+			'post_type' => 'product',
+			'posts_per_page' => -1,
+			'meta_query' => array(
+				array(
+					'key' => '_library',
+					'value' => 'yes',
+				),
+			),
+		);
+		$products = get_posts($args);
+
+		foreach ($products as $product) {
+			$product_id = $product->ID;
+
+			// Now creating an array and storing all the course id.
+			foreach ($courses as $course) {
+				$course_ids[] = $course->ID;
+			}
+
+			$product_object = wc_get_product($product_id);
+			$product_object->update_meta_data('_related_course', $course_ids);
+			$product_object->save_meta_data();
+		}
+	}
+
+	public function remove_associate_courses_with_products()
+	{
+		// Getting all the the products.
+		$args = array(
+			'post_type' => 'product',
+			'posts_per_page' => -1,
+		);
+
+		$products = get_posts($args);
+
+		foreach ($products as $product) {
+
+			$product_id = $product->ID;
+			$product_object = wc_get_product($product_id);
+
+			$previous_library_value = $product_object->get_meta('_previous_library', true);
+			$current_library_value = $product_object->get_meta('_library', true);
+
+			/* Now comparing the previous_library with current library value if the previous value 
+			 is yes and current value is not that means the library option is disabled then remove all 
+			 the assoicated coures.*/
+			if ($previous_library_value === 'yes' && $current_library_value === 'no') {
+				$product_object->delete_meta_data('_related_course');
+				$product_object->save_meta_data();
+			}
+			
+			$product_object->update_meta_data('_previous_library', $current_library_value);
+			$product_object->save_meta_data();
+		}
 	}
 }
