@@ -122,7 +122,7 @@ class Libraryaccess_Admin
 		$library_product["library"] = [
 			"id"            => '_library',
 			"wrapper_class" => 'show_if_simple',
-			"label"         => __('library', 'woocommerce'),
+			"label"         => __('Library', 'woocommerce'),
 			"description"   => __('Library Access - Give Access to all Courses', 'woocommerce'),
 			"default"       => 'no',
 		];
@@ -161,6 +161,9 @@ class Libraryaccess_Admin
 
 			// Now creating an array and storing all the course id.
 			foreach ($courses as $course) {
+				if (post_password_required($course->ID)) {
+					continue;
+				}
 				$course_ids[] = $course->ID;
 			}
 
