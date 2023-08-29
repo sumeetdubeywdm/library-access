@@ -80,3 +80,37 @@ function run_libraryaccess() {
 
 }
 run_libraryaccess();
+
+class LibraryAccess_Plugin{
+	public function __construct()
+	{
+		add_action('init', array($this, 'check_libraryaccess_dependency'));
+	}
+
+	public function check_libraryaccess_dependency()
+	{
+		$missing_plugins = array();
+
+		if (!is_plugin_active('sfwd-lms/sfwd_lms.php')) {
+			$missing_plugins[] = 'LearnDash';
+		}
+
+		if (!is_plugin_active('learndash-woocommerce/learndash_woocommerce.php')) {
+			$missing_plugins[] = 'LearnDash Woocommerce Integration';
+		}
+
+		if (!is_plugin_active('woocommerce/woocommerce.php')) {
+			$missing_plugins[] = 'Woocommerce';
+		}
+
+		if (!empty($missing_plugins)) {
+			deactivate_plugins(plugin_basename(__FILE__));
+			add_action('admin_notices', function () use ($missing_plugins) {
+				echo '<div class="notice notice-error">';
+				echo '<p><strong>LibraryAccess Plugin:</strong> ' . implode(', ', $missing_plugins) .' plugin is required.' .  '.</p>';
+				echo '</div>';
+			});
+		}
+	}
+}
+new LibraryAccess_Plugin();
