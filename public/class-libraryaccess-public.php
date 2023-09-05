@@ -137,7 +137,6 @@ class Libraryaccess_Public
 	
 		$library_access_products = get_posts($args);
 	
-		// Check if the user has purchased any of the specified products using WooCommerce functions.
 		if (function_exists('wc_customer_bought_product')) {
 			$user_id = get_current_user_id();
 			$course_count =0;
@@ -146,7 +145,6 @@ class Libraryaccess_Public
 				$product_id = $product->ID;
 				
 				if (wc_customer_bought_product($user_id, $user_id, $product_id)) {
-					// Check if the product is a library_access product.
 					$is_library_access_product = get_post_meta($product_id, '_library', true);
 
 					if ($is_library_access_product === 'yes') {
