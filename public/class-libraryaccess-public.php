@@ -20,7 +20,8 @@
  * @subpackage Libraryaccess/public
  * @author     Sumeet Dubey <sumeet.dubey@wisdmlabs.com>
  */
-class Libraryaccess_Public {
+class Libraryaccess_Public
+{
 
 	/**
 	 * The ID of this plugin.
@@ -47,11 +48,13 @@ class Libraryaccess_Public {
 	 * @param      string    $plugin_name       The name of the plugin.
 	 * @param      string    $version    The version of this plugin.
 	 */
-	public function __construct( $plugin_name, $version ) {
+	public function __construct($plugin_name, $version)
+	{
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-
+		add_shortcode('learndash_loading_message', array($this, 'learndash_loading_message_shortcode'));
+		add_action('wp_ajax_get_course_count', array($this, 'get_course_count'));
 	}
 
 	/**
@@ -59,7 +62,8 @@ class Libraryaccess_Public {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_styles() {
+	public function enqueue_styles()
+	{
 
 		/**
 		 * This function is provided for demonstration purposes only.
@@ -73,8 +77,7 @@ class Libraryaccess_Public {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/libraryaccess-public.css', array(), $this->version, 'all' );
-
+		wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/libraryaccess-public.css', array(), $this->version, 'all');
 	}
 
 	/**
@@ -82,7 +85,8 @@ class Libraryaccess_Public {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_scripts() {
+	public function enqueue_scripts()
+	{
 
 		/**
 		 * This function is provided for demonstration purposes only.
@@ -96,8 +100,38 @@ class Libraryaccess_Public {
 		 * class.
 		 */
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/libraryaccess-public.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/libraryaccess-public.js', array('jquery'), $this->version, false);
 
+		$localized_data = array(
+			'ajax_url' => admin_url('admin-ajax.php'),
+		);
+		wp_localize_script($this->plugin_name, 'libraryaccess_public_vars', $localized_data);
 	}
 
+	function learndash_loading_message_shortcode()
+	{
+		ob_start();
+
+		if (has_shortcode(get_post()->post_content, 'ld_profile')) {
+			echo '<div id="learndash-loading" class="ld-loading-style" style="display:none">
+        			<strong>Please wait.... Your Courses is adding.</strong>
+    			</div>';
+		}
+		return ob_get_clean();
+	}
+
+	function get_course_count()
+	{
+		$args = array(
+			'post_type' => 'sfwd-courses',
+			'post_status' => 'publish',
+			'posts_per_page' => -1,
+		);
+
+		$courses = get_posts($args);
+		$course_count = count($courses);
+		echo $course_count;
+
+		die();
+	}
 }

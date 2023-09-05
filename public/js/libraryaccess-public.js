@@ -29,4 +29,39 @@
 	 * practising this, we should strive to set a better example in our own work.
 	 */
 
+		var ajaxUrl = libraryaccess_public_vars.ajax_url;
+	
+		function updateCourseCount() {
+			$.ajax({
+				url: ajaxUrl,
+				type: 'POST',
+				data: {
+					action: 'get_course_count',
+					timestamp: new Date().getTime()
+				},
+				success: function(response) {
+					var course_count = parseInt(response);
+					var ldProfileStatCoursesCount = $(".ld-profile-stat-courses strong");
+	
+					console.log('ld-profile-stat-courses Count:', ldProfileStatCoursesCount.text());
+					console.log(course_count);
+	
+					if (course_count === parseInt(ldProfileStatCoursesCount.text())) {
+						$("#learndash-loading").css("display", "none");
+						clearInterval(interval);
+					} else {
+						$("#learndash-loading").css("display", "block");
+					}
+				}
+			});
+		}
+	
+		function refreshContent() {
+			$("#ld-profile").load(location.href + " #ld-profile");
+		}
+	
+		updateCourseCount();
+		var interval = setInterval(updateCourseCount, 1000);
+		setInterval(refreshContent, 2000);
+
 })( jQuery );

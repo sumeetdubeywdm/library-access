@@ -54,10 +54,11 @@ class Libraryaccess_Admin
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 		add_action('admin_init', array($this, 'add_library_checkbox'));
-		add_action('woocommerce_process_product_meta', array($this, 'save_checkbox_product_value'));
-		add_action('admin_init', array($this, 'add_associate_courses_with_products'));
-		add_action('admin_init', array($this, 'remove_associate_courses_with_products'));
+		add_action('woocommerce_process_product_meta', array($this, 'save_checkbox_product_value'), 10, 1);
+		add_action('admin_init', array($this, 'add_associate_courses_with_products'), 10);
+		add_action('admin_init', array($this, 'remove_associate_courses_with_products'), 10);
 		add_action('transition_post_status', array($this, 'new_courses_association_with_products'), 10, 3);
+		add_action('woocommerce_process_product_meta', array($this, 'removing_courses_from_users'), 10, 1);
 	}
 
 	/**
@@ -134,6 +135,8 @@ class Libraryaccess_Admin
 	public function save_checkbox_product_value($product_id)
 	{
 		$product = wc_get_product($product_id);
+		$previous_library = $product->get_meta('_library', true);
+		$product->update_meta_data('_previous_library', $previous_library);
 
 		$is_library = isset($_POST['_library']) ? 'yes' : 'no';
 		$product->update_meta_data('_library', $is_library);
@@ -170,6 +173,7 @@ class Libraryaccess_Admin
 			$product_id = $product->ID;
 
 			// Now creating an array and storing all the course id.
+			$course_ids = array();
 			foreach ($courses as $course) {
 				if (post_password_required($course->ID)) {
 					continue;
@@ -209,8 +213,8 @@ class Libraryaccess_Admin
 				$product_object->save_meta_data();
 			}
 
-			$product_object->update_meta_data('_previous_library', $current_library_value);
-			$product_object->save_meta_data();
+			// $product_object->update_meta_data('_previous_library', $current_library_value);
+			// $product_object->save_meta_data();
 		}
 	}
 
@@ -293,4 +297,57 @@ class Libraryaccess_Admin
 			}
 		}
 	}
+
+	public function removing_courses_from_users($product_id)
+	{
+
+		$product_object = wc_get_product($product_id);
+		$previous_library_value = $product_object->get_meta('_previous_library', true);
+		$current_library_value = $product_object->get_meta('_library', true);
+		$user_ids = $this->get_user_ids_who_purchased_product($product_id);
+
+		$associated_course_ids = $product_object->get_meta('_related_course', true);
+
+		if ($previous_library_value === 'yes' && $current_library_value === 'no') {
+			foreach ($user_ids as $user_id) {
+				foreach ($associated_course_ids as $course_id) {
+					ld_update_course_access($user_id, $course_id, true);
+				}
+			}
+		} else {
+			// if ($previous_library_value === 'no' && $current_library_value === 'yes') {
+			foreach ($user_ids as $user_id) {
+				foreach ($associated_course_ids as $course_id) {
+					ld_update_course_access($user_id, $course_id);
+				}
+			}
+		}
+	}
+
+	public function get_user_ids_who_purchased_product($product_id)
+	{
+		global $wpdb;
+
+
+		$order_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT order_id FROM {$wpdb->prefix}woocommerce_order_items 
+             WHERE order_item_type = 'line_item' AND order_item_name = %s",
+				wc_clean(get_the_title($product_id))
+			)
+		);
+
+
+		$user_ids = array();
+		foreach ($order_ids as $order_id) {
+			$user_id = get_post_meta($order_id, '_customer_user', true);
+			if ($user_id) {
+				$user_ids[] = $user_id;
+			}
+		}
+
+		return $user_ids;
+	}
+
+
 }
