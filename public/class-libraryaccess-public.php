@@ -120,18 +120,64 @@ class Libraryaccess_Public
 		return ob_get_clean();
 	}
 
-	function get_course_count()
-	{
+
+	function get_course_count() {
+		// Fetching products with library access
 		$args = array(
-			'post_type' => 'sfwd-courses',
-			'post_status' => 'publish',
+			'post_type' => 'product',
 			'posts_per_page' => -1,
+			'post_status' => 'publish',
+			'meta_query' => array(
+				array(
+					'key' => 'post_password',
+					'compare' => 'NOT EXISTS',
+				),
+			),
 		);
+	
+		$library_access_products = get_posts($args);
+	
+		// Check if the user has purchased any of the specified products using WooCommerce functions.
+		if (function_exists('wc_customer_bought_product')) {
+			$user_id = get_current_user_id();
+			$course_count =0;
+	
+			foreach ($library_access_products as $product) {
+				$product_id = $product->ID;
+				
+				if (wc_customer_bought_product($user_id, $user_id, $product_id)) {
+					// Check if the product is a library_access product.
+					$is_library_access_product = get_post_meta($product_id, '_library', true);
 
-		$courses = get_posts($args);
-		$course_count = count($courses);
-		echo $course_count;
-
-		die();
+					if ($is_library_access_product === 'yes') {
+						$related_courses = get_post_meta($product_id, '_related_course', true);
+						$course_count = count($related_courses);
+					}else{
+						$enrolled_users_count =$this->get_enrolled_users_count();	
+						$course_count = $enrolled_users_count;
+					}
+				}
+			}
+	
+			if ($course_count) {
+				echo $course_count;
+			}else {
+				$enrolled_users_count =$this->get_enrolled_users_count();	
+				echo $enrolled_users_count;
+		}
+	
+		
 	}
+	die();
+	
+}
+
+function get_enrolled_users_count() {
+	$user_id = get_current_user_id();
+	$enrolled_courses = learndash_user_get_enrolled_courses($user_id);
+	$enrolled_users_count = count($enrolled_courses);
+	
+	return $enrolled_users_count;
+}
+
 }
