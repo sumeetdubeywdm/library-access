@@ -122,7 +122,6 @@ class Libraryaccess_Public
 
 
 	function get_course_count() {
-		// Fetching products with library access
 		$args = array(
 			'post_type' => 'product',
 			'posts_per_page' => -1,
@@ -140,6 +139,7 @@ class Libraryaccess_Public
 		if (function_exists('wc_customer_bought_product')) {
 			$user_id = get_current_user_id();
 			$course_count =0;
+			$non_lib_count = $this->count_open_price_courses() ;	
 	
 			foreach ($library_access_products as $product) {
 				$product_id = $product->ID;
@@ -151,7 +151,8 @@ class Libraryaccess_Public
 						$related_courses = get_post_meta($product_id, '_related_course', true);
 						$course_count = count($related_courses);
 					}else{
-						$enrolled_users_count =$this->get_enrolled_users_count();	
+						$not_lib_pr = get_post_meta($product_id, '_related_course', true);
+						$enrolled_users_count = $non_lib_count + count($not_lib_pr);
 						$course_count = $enrolled_users_count;
 					}
 				}
@@ -176,6 +177,12 @@ function get_enrolled_users_count() {
 	$enrolled_users_count = count($enrolled_courses);
 	
 	return $enrolled_users_count;
+}
+
+function count_open_price_courses() {
+	$open_price_count = learndash_get_open_courses();
+	$ans = count($open_price_count);
+    return $ans;
 }
 
 }
